@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Game</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #8f5353;
+        }
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+        }
+        .setup-section, .game-section {
+            margin-bottom: 1.5rem;
+        }
+        input[type="text"] {
+            width: calc(100% - 120px);
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+            margin-right: 0.5rem;
+        }
+        button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            background-color: #007bff;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #add-word-btn {
+            width: 150px;
+            margin-top: 1rem;
+        }
+        #word-display {
+            border: 1px solid #ddd;
+            min-height: 50px;
+            padding: 1rem;
+            margin-top: 1rem;
+            background-color: #fafafa;
+            border-radius: 5px;
+            text-align: left;
+            word-wrap: break-word;
+        }
+        #word-display span {
+            display: inline-block;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            padding: 5px 10px;
+            background-color: #e9ecef;
+            border-radius: 3px;
+        }
+        #typing-area {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1.2rem;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            margin-top: 1rem;
+        }
+        #game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+        .word-list {
+            list-style-type: none;
+            padding: 0;
+            text-align: left;
+            margin-top: 1rem;
+        }
+        .word-list li {
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .word-list li.correct {
+            color: green;
+            text-decoration: line-through;
+        }
+        .check-mark {
+            color: green;
+            font-size: 1.5rem;
+            display: none; /* Initially hidden */
+        }
+        .hidden {
+            display: none;
+        }
+        .visible {
+            display: block;
+        }
+        #start-btn, #reset-btn {
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Typing Game</h1>
+
+        <div id="setup-area" class="visible">
+            <div class="setup-section">
+                <p>Add words one by one to create your list.</p>
+                <input type="text" id="word-input" placeholder="Enter a word">
+                <button id="add-word-btn">Add Word</button>
+                <div id="word-display"></div>
+            </div>
+            <button id="start-btn" disabled>Start Game</button>
+        </div>
+        
+        <div id="game-area" class="hidden">
+            <ul id="word-list" class="word-list"></ul>
+            <input type="text" id="typing-area" disabled>
+            <div id="game-info">
+                <span>Score: <span id="score">0</span></span>
+                <span>Words Left: <span id="words-left">0</span></span>
+            </div>
+            <button id="reset-btn" class="hidden">Reset Game</button>
+        </div>
+    </div>
+
+    <script>
+        const wordInput = document.getElementById('word-input');
+        const addWordBtn = document.getElementById('add-word-btn');
+        const startBtn = document.getElementById('start-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        const setupArea = document.getElementById('setup-area');
+        const gameArea = document.getElementById('game-area');
+
+        const wordDisplay = document.getElementById('word-display');
+        const wordListEl = document.getElementById('word-list');
+        const typingArea = document.getElementById('typing-area');
+        const scoreEl = document.getElementById('score');
+        const wordsLeftEl = document.getElementById('words-left');
+
+        let words = [];
+        let currentWordIndex = 0;
+        let score = 0;
+
+        // Event Listeners
+        addWordBtn.addEventListener('click', addWord);
+        startBtn.addEventListener('click', startGame);
+        resetBtn.addEventListener('click', resetGame);
+        typingArea.addEventListener('input', checkWord);
+        wordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addWord();
+            }
+        });
+
+        function addWord() {
+            const newWord = wordInput.value.trim();
+            if (newWord && !words.includes(newWord)) {
+                words.push(newWord);
+                const wordSpan = document.createElement('span');
+                wordSpan.textContent = newWord;
+                wordDisplay.appendChild(wordSpan);
+                wordInput.value = '';
+                wordInput.focus();
+                startBtn.disabled = false;
+            }
+        }
+
+        function startGame() {
+            if (words.length === 0) {
+                alert('Please add at least one word to start the game.');
+                return;
+            }
+
+            // Prepare game UI
+            setupArea.classList.remove('visible');
+            setupArea.classList.add('hidden');
+            gameArea.classList.remove('hidden');
+            gameArea.classList.add('visible');
+
+            // Populate the word list for the game
+            wordListEl.innerHTML = '';
+            words.forEach(word => {
+                const li = document.createElement('li');
+                li.textContent = word;
+                const checkMark = document.createElement('span');
+                checkMark.textContent = '✔️';
+                checkMark.classList.add('check-mark');
+                li.appendChild(checkMark);
+                wordListEl.appendChild(li);
+            });
+
+            // Initialize game state
+            currentWordIndex = 0;
+            score = 0;
+            scoreEl.textContent = score;
+            wordsLeftEl.textContent = words.length;
+            typingArea.value = '';
+            typingArea.disabled = false;
+            typingArea.focus();
+        }
+
+        function checkWord() {
+            if (currentWordIndex >= words.length) {
+                return;
+            }
+
+            const typedWord = typingArea.value.trim();
+            const currentWord = words[currentWordIndex];
+
+            if (typedWord === currentWord) {
+                const listItem = wordListEl.children[currentWordIndex];
+                listItem.classList.add('correct');
+                listItem.querySelector('.check-mark').style.display = 'inline';
+
+                score++;
+                wordsLeftEl.textContent = words.length - score;
+                scoreEl.textContent = score;
+
+                currentWordIndex++;
+                typingArea.value = '';
+
+                if (currentWordIndex >= words.length) {
+                    typingArea.disabled = true;
+                    alert(`Game Over! Your final score is ${score} out of ${words.length}.`);
+                    resetBtn.classList.remove('hidden');
+                    resetBtn.classList.add('visible');
+                }
+            }
+        }
+
+        function resetGame() {
+            // Reset state
+            words = [];
+            wordDisplay.innerHTML = '';
+            startBtn.disabled = true;
+            
+            // Show setup area
+            setupArea.classList.remove('hidden');
+            setupArea.classList.add('visible');
+            gameArea.classList.remove('visible');
+            gameArea.classList.add('hidden');
+            resetBtn.classList.remove('visible');
+            resetBtn.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
